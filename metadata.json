@@ -1,0 +1,5 @@
+{
+  "name": "MVP of EstateMatch AI",
+  "description": "An intelligent real estate analyzer that scores listings against personal preferences using Gemini 2.5. Optimized for the Canadian market.",
+  "requestFramePermissions": []
+}
