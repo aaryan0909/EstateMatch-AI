@@ -1,4 +1,7 @@
+export type ListingType = 'BUY' | 'RENT';
+
 export interface UserPreferences {
+  listingType: ListingType;
   budgetMax: number;
   minBedrooms: number;
   minBathrooms: number;
@@ -12,10 +15,10 @@ export interface UserPreferences {
   customCriteria: string; // Natural language inputs like "Must allow large dogs"
 }
 
-export interface ScoredFeature {
-  name: string;
-  score: number; // -5 to +5 impact
-  reason: string;
+export interface FactCheck {
+  claim: string;
+  sourceQuote: string | null; // The exact text from the listing justifying this
+  confidence: string; // "High", "Medium", "Low"
 }
 
 export interface AnalysisResult {
@@ -27,20 +30,35 @@ export interface AnalysisResult {
     quickSummary: string;
   };
   matchScore: {
-    total: number; // 0-100
-    grade: string; // A, B, C, F
+    total: number;
+    grade: string;
     breakdown: string;
+    categoryScores: {
+      financial: number;
+      lifestyle: number;
+      condition: number;
+    };
   };
   details: {
-    pros: string[];
-    cons: string[];
-    redFlags: string[];
+    pros: FactCheck[]; 
+    cons: FactCheck[];
+    redFlags: FactCheck[];
     hiddenGems: string[];
   };
   marketAnalysis: {
-    valueVerdict: string; // "Overpriced", "Fair", "Steal"
+    valueVerdict: string;
     investmentPotential: string;
+    comparableNotes: string;
   };
+  contactDraft: {
+    subject: string;
+    body: string;
+  };
+}
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
 }
 
 export enum AppState {
