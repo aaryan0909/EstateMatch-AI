@@ -93,6 +93,9 @@ const App: React.FC = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <p className="text-xl text-stone-600 leading-relaxed mb-10">
+          Paste a real-estate listing, get its red flags, hidden costs, and a match score against what you actually want.
+        </p>
         
         {appState === AppState.IDLE || appState === AppState.ERROR || appState === AppState.ANALYZING ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
