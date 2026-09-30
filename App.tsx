@@ -3,6 +3,7 @@ import { UserPreferences, AnalysisResult, AppState } from './types';
 import PreferencesPanel from './components/PreferencesPanel';
 import AnalysisView from './components/AnalysisView';
 import { analyzeListing } from './services/geminiService';
+import { DEMO_ANALYSIS, isSampleListing } from './services/demoAnalysis';
 import sampleListing from './sample-listing.md?raw';
 
 const App: React.FC = () => {
@@ -10,6 +11,7 @@ const App: React.FC = () => {
   const [listingContent, setListingContent] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isDemoResult, setIsDemoResult] = useState<boolean>(false);
 
   const [preferences, setPreferences] = useState<UserPreferences>({
     listingType: 'BUY',
@@ -33,7 +35,16 @@ const App: React.FC = () => {
     }
     
     if (!process.env.API_KEY) {
-       setErrorMsg("API_KEY not found in environment. Please check setup.");
+       // Demo mode: no Gemini key is configured, so only the bundled
+       // sample listing can be analyzed (with a canned result).
+       if (isSampleListing(listingContent)) {
+         setErrorMsg(null);
+         setAnalysisResult(DEMO_ANALYSIS);
+         setIsDemoResult(true);
+         setAppState(AppState.RESULTS);
+       } else {
+         setErrorMsg("A Gemini API key is required to analyze your own listings. No key is configured (set GEMINI_API_KEY to enable live analysis), so demo mode only works with the bundled sample listing. Use 'Load the sample listing' and click Analyze to see a sample analysis.");
+       }
        return;
     }
 
@@ -55,6 +66,7 @@ const App: React.FC = () => {
     setAppState(AppState.IDLE);
     setListingContent('');
     setAnalysisResult(null);
+    setIsDemoResult(false);
   };
 
   return (
@@ -160,7 +172,16 @@ const App: React.FC = () => {
             </div>
           </div>
         ) : (
-          analysisResult && <AnalysisView result={analysisResult} listingContent={listingContent} onReset={resetApp} />
+          analysisResult && (
+            <div>
+              {isDemoResult && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-sm font-bold text-center">
+                  Demo mode: sample analysis — no Gemini API key is configured, so this is a pre-written analysis of the sample listing, not a live AI result.
+                </div>
+              )}
+              <AnalysisView result={analysisResult} listingContent={listingContent} onReset={resetApp} />
+            </div>
+          )
         )}
       </main>
     </div>
