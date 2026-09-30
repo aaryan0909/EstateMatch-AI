@@ -3,6 +3,7 @@ import { UserPreferences, AnalysisResult, AppState } from './types';
 import PreferencesPanel from './components/PreferencesPanel';
 import AnalysisView from './components/AnalysisView';
 import { analyzeListing } from './services/geminiService';
+import sampleListing from './sample-listing.md?raw';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
@@ -123,6 +124,15 @@ const App: React.FC = () => {
                       {errorMsg}
                     </div>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => setListingContent(sampleListing)}
+                    disabled={appState === AppState.ANALYZING}
+                    className="text-sm font-bold text-violet-600 hover:text-violet-800 underline underline-offset-4 decoration-violet-200 hover:decoration-violet-400 transition-colors"
+                  >
+                    Don't have a listing handy? Load the sample listing →
+                  </button>
 
                   <button
                     onClick={handleAnalyze}
