@@ -3,12 +3,15 @@ import { UserPreferences, AnalysisResult, AppState } from './types';
 import PreferencesPanel from './components/PreferencesPanel';
 import AnalysisView from './components/AnalysisView';
 import { analyzeListing } from './services/geminiService';
+import { DEMO_ANALYSIS, isSampleListing } from './services/demoAnalysis';
+import sampleListing from './sample-listing.md?raw';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const [listingContent, setListingContent] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isDemoResult, setIsDemoResult] = useState<boolean>(false);
 
   const [preferences, setPreferences] = useState<UserPreferences>({
     listingType: 'BUY',
@@ -32,7 +35,16 @@ const App: React.FC = () => {
     }
     
     if (!process.env.API_KEY) {
-       setErrorMsg("API_KEY not found in environment. Please check setup.");
+       // Demo mode: no Gemini key is configured, so only the bundled
+       // sample listing can be analyzed (with a canned result).
+       if (isSampleListing(listingContent)) {
+         setErrorMsg(null);
+         setAnalysisResult(DEMO_ANALYSIS);
+         setIsDemoResult(true);
+         setAppState(AppState.RESULTS);
+       } else {
+         setErrorMsg("A Gemini API key is required to analyze your own listings. No key is configured (set GEMINI_API_KEY to enable live analysis), so demo mode only works with the bundled sample listing. Use 'Load the sample listing' and click Analyze to see a sample analysis.");
+       }
        return;
     }
 
@@ -54,6 +66,7 @@ const App: React.FC = () => {
     setAppState(AppState.IDLE);
     setListingContent('');
     setAnalysisResult(null);
+    setIsDemoResult(false);
   };
 
   return (
@@ -80,6 +93,9 @@ const App: React.FC = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <p className="text-xl text-stone-600 leading-relaxed mb-10">
+          Paste a real-estate listing, get its red flags, hidden costs, and a match score against what you actually want.
+        </p>
         
         {appState === AppState.IDLE || appState === AppState.ERROR || appState === AppState.ANALYZING ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -125,6 +141,15 @@ const App: React.FC = () => {
                   )}
 
                   <button
+                    type="button"
+                    onClick={() => setListingContent(sampleListing)}
+                    disabled={appState === AppState.ANALYZING}
+                    className="text-sm font-bold text-violet-600 hover:text-violet-800 underline underline-offset-4 decoration-violet-200 hover:decoration-violet-400 transition-colors"
+                  >
+                    Don't have a listing handy? Load the sample listing →
+                  </button>
+
+                  <button
                     onClick={handleAnalyze}
                     disabled={appState === AppState.ANALYZING || !listingContent}
                     className={`w-full py-5 px-6 rounded-2xl font-bold text-lg text-white shadow-lg transition-all 
@@ -150,7 +175,16 @@ const App: React.FC = () => {
             </div>
           </div>
         ) : (
-          analysisResult && <AnalysisView result={analysisResult} listingContent={listingContent} onReset={resetApp} />
+          analysisResult && (
+            <div>
+              {isDemoResult && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-sm font-bold text-center">
+                  Demo mode: sample analysis — no Gemini API key is configured, so this is a pre-written analysis of the sample listing, not a live AI result.
+                </div>
+              )}
+              <AnalysisView result={analysisResult} listingContent={listingContent} onReset={resetApp} />
+            </div>
+          )
         )}
       </main>
     </div>

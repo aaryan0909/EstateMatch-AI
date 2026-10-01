@@ -1,87 +1,80 @@
 # EstateMatch AI 🇨🇦
 
-**Your cynical, intelligent, and helpful assistant for Canadian Real Estate.**
+**Your cynical, intelligent, and helpful assistant for Canadian real estate.**
 
-EstateMatch AI helps you cut through the marketing fluff of real estate listings. It analyzes descriptions to find hidden red flags (Strata fees, oil tanks, special assessments), checks if the home actually meets your criteria, and even drafts inquiry emails for you.
+A weekend-MVP web app that reads a listing's description like a grumpy home inspector: it flags hidden red flags (strata fees, special assessments, oil tanks), grounds every claim in a quote from the text so the AI can't hallucinate, scores the listing 0-100 against your budget and must-haves, and drafts an inquiry email to the agent about what it found.
 
----
-
-## 🚀 Key Features
-
-### 1. **The "Cynical Auditor" Engine**
-Most AI tools just summarize. Ours acts like a grumpy home inspector.
-*   **Anti-Hallucination:** It only reports facts it can quote directly from the text.
-*   **Buy vs. Rent Modes:** Tailored logic for each.
-    *   *Buying:* Checks for knob & tube wiring, leasehold status, age of roof.
-    *   *Renting:* Checks for pet deposits, utilities inclusions, fixed-term clauses.
-
-### 2. **Match Score 🎯**
-Get a definitive 0-100 score based on your specific needs:
-*   Budget constraints
-*   Bedroom/Bathroom count
-*   Commute & Lifestyle priorities
-*   Custom "Must-Haves" (e.g., "Must be south-facing")
-
-### 3. **Chat with the Listing 💬**
-Stop Control-F'ing through long descriptions. Just ask:
-*   "Is the heating gas or electric?"
-*   "Does it mention a parking stall number?"
-*   "Are rentals allowed?"
-
-### 4. **Inquiry Drafts ✉️**
-Found a red flag? The AI automatically drafts a professional email to the agent/landlord specifically asking about the missing info or risks it found.
+Paste listing text (e.g. copied from Realtor.ca, Zolo, or Craigslist) — the app analyzes it with Google Gemini 2.5 Flash.
 
 ---
 
-## 🛠️ Tech Stack
+## What it does
 
-*   **Frontend:** React (Next.js ready), Tailwind CSS
-*   **AI Model:** Google Gemini 2.5 Flash (via `@google/genai`)
-*   **Styling:** Custom "Pastel Soft Life" UI with Bento Grid layouts
-*   **Font:** 'Outfit' from Google Fonts
+1. **Cynical Auditor analysis** — Structured JSON analysis of the listing text via Gemini, with every pro, con, and red flag paired with a `sourceQuote` pulled verbatim from the listing. If the listing doesn't state something, the model is instructed to say "Not specified in listing" rather than guess.
+2. **Match score (0-100)** — Scored against your budget, min beds/baths, and custom must-haves, with Financial / Lifestyle / Condition sub-scores and an explicit scoring rubric (over budget, missing specs, and severe red flags deduct points).
+3. **Buy vs. Rent modes** — Different audit focus per mode: buying checks strata fees, leasehold status, roof age, oil tanks, knob & tube wiring; renting checks utilities inclusions, lease terms, pet policies, laundry access.
+4. **Chat with the listing** — Ask questions about the pasted text ("Is the heating gas or electric?"); answers are grounded in the listing.
+5. **Inquiry email draft** — Generates a copy-to-clipboard email to the agent/landlord specifically asking about the red flags or missing info it found.
 
----
+## What's honest about the scope
 
-## 📦 Setup & Installation
-
-1.  **Clone the repo**
-    ```bash
-    git clone https://github.com/yourusername/estatematch-ai.git
-    cd estatematch-ai
-    ```
-
-2.  **Install Dependencies**
-    ```bash
-    npm install
-    ```
-
-3.  **Get a Gemini API Key**
-    *   Visit [Google AI Studio](https://aistudio.google.com/).
-    *   Create a free API key.
-
-4.  **Run the Project**
-    *   This project is set up to run in a standard React environment or specific AI coding sandboxes.
-    *   Ensure `process.env.API_KEY` is set in your environment or passed during build.
+- This is a weekend MVP, not a production product. The app reads only the text you paste — it doesn't fetch listing URLs, scrape sites, or pull MLS data.
+- Everything analytical is LLM-generated (Gemini 2.5 Flash, low temperature, structured output schema). Scores and verdicts can be wrong. It's a second pair of eyes, not a substitute for a realtor, home inspector, or lawyer.
+- Styling uses the Tailwind Play CDN from `index.html`, which is fine for a demo but not how you'd ship production CSS.
 
 ---
 
-## 📸 How to Use
+## Setup
 
-1.  **Select Mode:** Toggle between **BUY** and **RENT** at the top.
-2.  **Set Preferences:** Enter your budget, desired beds/baths, and prioritize what matters (Commute vs. Condition).
-3.  **Paste Listing:** Copy the full description/details from Realtor.ca, Zolo, or Craigslist and paste it into the box.
-4.  **Analyze:** Click the button and watch the magic happen.
-5.  **Interrogate:** Use the "Chat" tab to ask specific questions about the property.
+1. **Clone and install**
+   ```bash
+   git clone https://github.com/aaryan0909/EstateMatch-AI.git
+   cd EstateMatch-AI
+   npm install
+   ```
+
+2. **Add a Gemini API key** (free at [Google AI Studio](https://aistudio.google.com/))
+   ```bash
+   cp .env.example .env
+   # then put your key in .env as GEMINI_API_KEY=...
+   ```
+
+3. **Run it**
+   ```bash
+   npm run dev   # → http://localhost:3000
+   ```
+
+## Try it
+
+1. Toggle **Buy** / **Rent**, set your budget and priorities in the panel.
+2. Paste a listing's description into the box — or click **"Load the sample listing"** to use the included synthetic Toronto condo fixture (`sample-listing.md`).
+3. Hit **Analyze Listing**. (Without a `GEMINI_API_KEY` in `.env`, the app shows a clear error instead of a spinner.)
+
+## Example output (illustrative)
+
+The analyzer returns structured JSON like this (exact wording is model-generated):
+
+```json
+{
+  "summary": { "title": "2 bed, 2 bath corner suite", "price": "$789,000", "location": "Queens Quay, Toronto", "layout": "2 Bed / 2 Bath, 875 sq ft" },
+  "matchScore": { "total": 62, "grade": "C", "categoryScores": { "financial": 55, "lifestyle": 70, "condition": 60 } },
+  "details": {
+    "redFlags": [
+      { "claim": "Pending $4,200 special assessment per unit",
+        "sourceQuote": "the building has approved a special assessment of $4,200 per unit for balcony membrane repairs",
+        "confidence": "High" }
+    ]
+  },
+  "contactDraft": { "subject": "Re: 88 Queens Wharf Blvd — questions on assessment and fees", "body": "..." }
+}
+```
+
+## Tech stack
+
+- React 19 + Vite 6 + TypeScript
+- Tailwind CSS (via Play CDN in `index.html` for the demo UI)
+- Google Gemini 2.5 Flash via `@google/genai`, with a strict JSON response schema and an anti-hallucination system prompt (`services/geminiService.ts`)
 
 ---
 
-## 🇨🇦 Canadian Context
-This tool is specifically tuned for Canadian real estate terms:
-*   *Strata Fees* (Condo fees)
-*   *Special Assessments* (Unexpected condo costs)
-*   *Knob and Tube* (Old wiring found in Toronto/Vancouver homes)
-*   *Oil Tanks* (Environmental hazards in older homes)
-
----
-
-*Built with ❤️ for stressed home buyers.*
+*Built for stressed home buyers who don't trust the word "cozy."*

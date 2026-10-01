@@ -18,7 +18,32 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
   ]);
   const [inputMsg, setInputMsg] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [copied, setCopied] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Defensive guards: the model sometimes returns missing/malformed fields.
+  const pros = Array.isArray(result.details?.pros) ? result.details.pros : [];
+  const cons = Array.isArray(result.details?.cons) ? result.details.cons : [];
+  const redFlags = Array.isArray(result.details?.redFlags) ? result.details.redFlags : [];
+  const hiddenGems = Array.isArray(result.details?.hiddenGems) ? result.details.hiddenGems : [];
+  const matchTotal = Math.max(0, Math.min(100, Number(result.matchScore?.total) || 0));
+
+  const handleCopyDraft = async () => {
+    const text = `${result.contactDraft.subject}\n\n${result.contactDraft.body}`;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for browsers without async clipboard access
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     if (!chatSession) {
@@ -111,9 +136,9 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
 
               {/* Circular Score Visualization */}
               <div className="flex-shrink-0 flex flex-col items-center">
-                <div className={`w-40 h-40 rounded-full border-[6px] flex flex-col items-center justify-center bg-white shadow-lg relative ${getScoreColor(result.matchScore.total)}`}>
+                <div className={`w-40 h-40 rounded-full border-[6px] flex flex-col items-center justify-center bg-white shadow-lg relative ${getScoreColor(matchTotal)}`}>
                   <span className="text-5xl font-black tracking-tighter text-stone-800">
-                    {result.matchScore.total}
+                    {matchTotal}
                   </span>
                   <span className="text-xs font-bold text-stone-400 uppercase tracking-widest mt-1">Match</span>
                   
@@ -125,6 +150,11 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
                   <div className="text-center">
                     <div className="text-lg font-bold text-stone-800">{result.matchScore.categoryScores.financial}</div>
                     <div className="text-[10px] uppercase font-bold text-stone-400">Value</div>
+                  </div>
+                  <div className="w-px bg-stone-200 h-8"></div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-stone-800">{result.matchScore.categoryScores.lifestyle}</div>
+                    <div className="text-[10px] uppercase font-bold text-stone-400">Life</div>
                   </div>
                   <div className="w-px bg-stone-200 h-8"></div>
                   <div className="text-center">
@@ -163,8 +193,9 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
             <h3 className="font-bold text-emerald-800 mb-4 flex items-center gap-2">
               <span className="bg-white p-1.5 rounded-lg shadow-sm text-lg">👍</span> The Good
             </h3>
+            {pros.length > 0 ? (
             <div className="space-y-3">
-              {result.details.pros.slice(0, 4).map((item, i) => (
+              {pros.slice(0, 4).map((item, i) => (
                 <div key={i} className="bg-white/60 p-3 rounded-xl">
                   <div className="font-bold text-emerald-900 text-sm">{item.claim}</div>
                   {item.sourceQuote && (
@@ -173,14 +204,20 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
                 </div>
               ))}
             </div>
+            ) : (
+              <div className="h-32 flex items-center justify-center text-emerald-300 font-bold text-sm bg-white/50 rounded-xl border border-dashed border-emerald-200">
+                No standout positives found.
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-4 bg-amber-50 rounded-[2rem] p-6 border border-amber-100">
             <h3 className="font-bold text-amber-800 mb-4 flex items-center gap-2">
               <span className="bg-white p-1.5 rounded-lg shadow-sm text-lg">👎</span> The Bad
             </h3>
+            {cons.length > 0 ? (
             <div className="space-y-3">
-              {result.details.cons.slice(0, 4).map((item, i) => (
+              {cons.slice(0, 4).map((item, i) => (
                 <div key={i} className="bg-white/60 p-3 rounded-xl">
                   <div className="font-bold text-amber-900 text-sm">{item.claim}</div>
                   {item.sourceQuote && (
@@ -189,15 +226,20 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
                 </div>
               ))}
             </div>
+            ) : (
+              <div className="h-32 flex items-center justify-center text-amber-300 font-bold text-sm bg-white/50 rounded-xl border border-dashed border-amber-200">
+                No notable downsides found.
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-4 bg-rose-50 rounded-[2rem] p-6 border border-rose-100">
              <h3 className="font-bold text-rose-800 mb-4 flex items-center gap-2">
               <span className="bg-white p-1.5 rounded-lg shadow-sm text-lg">🚩</span> Red Flags
             </h3>
-             {result.details.redFlags.length > 0 ? (
+             {redFlags.length > 0 ? (
                 <div className="space-y-3">
-                  {result.details.redFlags.map((item, i) => (
+                  {redFlags.map((item, i) => (
                     <div key={i} className="bg-white p-3 rounded-xl border border-rose-100 shadow-sm">
                       <div className="font-bold text-rose-900 text-sm">{item.claim}</div>
                       {item.sourceQuote && (
@@ -240,11 +282,11 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
                
                <div className="mt-4 flex justify-end">
                  <button 
-                  onClick={() => navigator.clipboard.writeText(`${result.contactDraft.subject}\n\n${result.contactDraft.body}`)}
+                  onClick={handleCopyDraft}
                   className="px-6 py-2 bg-white text-stone-900 rounded-lg text-sm font-bold hover:bg-stone-200 transition-colors flex items-center gap-2"
                  >
                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                   Copy to Clipboard
+                   {copied ? 'Copied!' : 'Copy to Clipboard'}
                  </button>
                </div>
              </div>
@@ -256,11 +298,15 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
                <span className="text-xl">✨</span> Hidden Gems
              </h3>
              <ul className="space-y-4">
-                {result.details.hiddenGems.map((gem, i) => (
-                  <li key={i} className="text-sm font-medium text-sky-900 leading-snug">
-                    {gem}
-                  </li>
-                ))}
+                {hiddenGems.length > 0 ? (
+                  hiddenGems.map((gem, i) => (
+                    <li key={i} className="text-sm font-medium text-sky-900 leading-snug">
+                      {gem}
+                    </li>
+                  ))
+                ) : (
+                  <li className="text-sm font-medium text-sky-400">No hidden gems spotted.</li>
+                )}
              </ul>
           </div>
 
