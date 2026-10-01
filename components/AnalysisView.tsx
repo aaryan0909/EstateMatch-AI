@@ -1,20 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AnalysisResult, ChatMessage } from '../types';
-import { createListingChat } from '../services/geminiService';
-import { Chat } from '@google/genai';
+import { AnalysisMode } from '../services/analysisClient';
 
 interface Props {
   result: AnalysisResult;
   listingContent: string;
   onReset: () => void;
+  onSendMessage: (message: string, history: ChatMessage[]) => Promise<string>;
+  mode: AnalysisMode;
 }
 
-const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
+const AnalysisView: React.FC<Props> = ({ result, onReset, onSendMessage, mode }) => {
   const [activeTab, setActiveTab] = useState<'analysis' | 'chat'>('analysis');
-  const [chatSession, setChatSession] = useState<Chat | null>(null);
-  
+
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: 'I\'ve memorized the listing details. What do you need to know?' }
+    {
+      role: 'model',
+      text:
+        mode === 'live'
+          ? "Ask me anything about this listing. I'll answer from the listing text."
+          : "Ask about price, fees, parking, pets, laundry, or red flags. Local answers quote the listing text and say so when something is not mentioned.",
+    },
   ]);
   const [inputMsg, setInputMsg] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -46,29 +52,24 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
   };
 
   useEffect(() => {
-    if (!chatSession) {
-      setChatSession(createListingChat(listingContent));
-    }
-  }, [listingContent]);
-
-  useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeTab]);
 
   const handleSendMessage = async () => {
-    if (!inputMsg.trim() || !chatSession) return;
-    
+    if (!inputMsg.trim() || isSending) return;
+
     const userText = inputMsg;
+    const history = messages;
     setInputMsg('');
     setMessages(prev => [...prev, { role: 'user', text: userText }]);
     setIsSending(true);
 
     try {
-      const response = await chatSession.sendMessage({ message: userText });
-      const text = response.text || "I couldn't generate a response.";
+      const text = await onSendMessage(userText, history);
       setMessages(prev => [...prev, { role: 'model', text }]);
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'model', text: "Error: Could not reach the AI." }]);
+      console.error(e);
+      setMessages(prev => [...prev, { role: 'model', text: 'Error: I could not answer that question. Try asking about a specific detail in the listing.' }]);
     } finally {
       setIsSending(false);
     }
@@ -319,7 +320,7 @@ const AnalysisView: React.FC<Props> = ({ result, listingContent, onReset }) => {
                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold">AI</div>
                <div>
                  <div className="font-bold text-stone-800">Listing Assistant</div>
-                 <div className="text-xs text-stone-400 font-bold uppercase">Online</div>
+                 <div className="text-xs text-stone-400 font-bold uppercase">{mode === 'live' ? 'Live AI' : 'Local, quote-backed'}</div>
                </div>
              </div>
           </div>
