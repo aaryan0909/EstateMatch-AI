@@ -1,4 +1,4 @@
-import { UserPreferences } from "../../types";
+import { UserPreferences } from "../../types.js";
 
 const clampNumber = (value: unknown, min: number, max: number, fallback: number): number => {
   const parsed = typeof value === "number" ? value : Number(value);

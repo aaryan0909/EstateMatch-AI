@@ -1,4 +1,4 @@
-import { ChatMessage } from "../types";
+import { ChatMessage } from "../types.js";
 import {
   ApiRequest,
   ApiResponse,
@@ -7,10 +7,10 @@ import {
   requireMethod,
   requireSameOrigin,
   sendJson,
-} from "./_lib/http";
-import { chatWithGemini, liveAiConfigured } from "./_lib/gemini";
-import { rateLimit } from "./_lib/rateLimit";
-import { sanitizeListing } from "./_lib/validate";
+} from "./_lib/http.js";
+import { chatWithGemini, liveAiConfigured } from "./_lib/gemini.js";
+import { rateLimit } from "./_lib/rateLimit.js";
+import { sanitizeListing } from "./_lib/validate.js";
 
 interface ChatBody {
   listingContent?: unknown;

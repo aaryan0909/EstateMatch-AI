@@ -1,5 +1,5 @@
-import { ApiRequest, ApiResponse, requireMethod, sendJson } from "./_lib/http";
-import { liveAiConfigured } from "./_lib/gemini";
+import { ApiRequest, ApiResponse, requireMethod, sendJson } from "./_lib/http.js";
+import { liveAiConfigured } from "./_lib/gemini.js";
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (!requireMethod(req, res, "GET")) return;

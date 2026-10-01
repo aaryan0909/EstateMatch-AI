@@ -1,16 +1,22 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { AnalysisResult, ChatMessage, UserPreferences } from "../../types";
-import { cleanListingText } from "../../services/analyzerCore";
+import type { GoogleGenAI as GoogleGenAIClient, Schema } from "@google/genai";
+import { AnalysisResult, ChatMessage, UserPreferences } from "../../types.js";
+import { cleanListingText } from "../../services/analyzerCore.js";
 
 export const liveAiConfigured = (): boolean =>
   Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY);
 
-const getClient = (): GoogleGenAI | null => {
+// The SDK is loaded lazily so a module or SDK load problem can never take
+// down /api/config or the local-mode fallback paths with it.
+const loadSdk = () => import("@google/genai");
+
+const getClient = async (): Promise<GoogleGenAIClient | null> => {
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-  return apiKey ? new GoogleGenAI({ apiKey }) : null;
+  if (!apiKey) return null;
+  const { GoogleGenAI } = await loadSdk();
+  return new GoogleGenAI({ apiKey });
 };
 
-const analysisSchema: Schema = {
+const buildAnalysisSchema = (Type: Awaited<ReturnType<typeof loadSdk>>["Type"]): Schema => ({
   type: Type.OBJECT,
   properties: {
     summary: {
@@ -104,7 +110,7 @@ const analysisSchema: Schema = {
     },
   },
   required: ["summary", "matchScore", "details", "marketAnalysis", "contactDraft"],
-};
+});
 
 const SYSTEM_INSTRUCTION = `
 You are a Cynical Real Estate Auditor for the Canadian market.
@@ -122,8 +128,9 @@ export const analyzeWithGemini = async (
   listingContent: string,
   preferences: UserPreferences,
 ): Promise<AnalysisResult> => {
-  const ai = getClient();
+  const ai = await getClient();
   if (!ai) throw new Error("LIVE_AI_NOT_CONFIGURED");
+  const { Type } = await loadSdk();
   const cleaned = cleanListingText(listingContent).substring(0, 40_000);
   const prompt = `
 USER CONTEXT: Looking to ${preferences.listingType}
@@ -144,7 +151,7 @@ ${cleaned}
     config: {
       systemInstruction: SYSTEM_INSTRUCTION,
       responseMimeType: "application/json",
-      responseSchema: analysisSchema,
+      responseSchema: buildAnalysisSchema(Type),
       temperature: 0.1,
     },
   });
@@ -157,7 +164,7 @@ export const chatWithGemini = async (
   history: ChatMessage[],
   message: string,
 ): Promise<string> => {
-  const ai = getClient();
+  const ai = await getClient();
   if (!ai) throw new Error("LIVE_AI_NOT_CONFIGURED");
   const cleaned = cleanListingText(listingContent).substring(0, 30_000);
   const transcript = history

@@ -6,11 +6,11 @@ import {
   requireMethod,
   requireSameOrigin,
   sendJson,
-} from "./_lib/http";
-import { analyzeWithGemini, liveAiConfigured } from "./_lib/gemini";
-import { rateLimit } from "./_lib/rateLimit";
-import { sanitizeListing, sanitizePreferences } from "./_lib/validate";
-import { applyDeterministicScoring } from "../services/analyzerCore";
+} from "./_lib/http.js";
+import { analyzeWithGemini, liveAiConfigured } from "./_lib/gemini.js";
+import { rateLimit } from "./_lib/rateLimit.js";
+import { sanitizeListing, sanitizePreferences } from "./_lib/validate.js";
+import { applyDeterministicScoring } from "../services/analyzerCore.js";
 
 interface AnalyzeBody {
   listingContent?: unknown;
