@@ -163,13 +163,8 @@ const App: React.FC = () => {
         </p>
 
         {appState === AppState.IDLE || appState === AppState.ERROR || appState === AppState.ANALYZING ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            <div className="lg:col-span-5 order-2 lg:order-1">
-              <PreferencesPanel preferences={preferences} setPreferences={setPreferences} />
-            </div>
-
-            <div className="lg:col-span-7 order-1 lg:order-2 space-y-8">
-              <div className="bg-white p-8 rounded-3xl shadow-lg border border-stone-100">
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div className="bg-white p-8 rounded-3xl shadow-lg border border-stone-100">
                 <h1 className="text-4xl font-black text-stone-800 mb-4 tracking-tight">
                   Your smart assistant for <br />
                   <span className="text-violet-600">Canadian Real Estate.</span>
@@ -231,8 +226,22 @@ const App: React.FC = () => {
                       : 'Local mode runs entirely in your browser. It is rules-based, so unusual wording can be missed, but no API key or listing upload is required.'}
                   </p>
                 </div>
-              </div>
             </div>
+
+            <details className="group">
+              <summary className="cursor-pointer list-none flex items-center justify-between bg-white border border-stone-200 rounded-2xl px-6 py-4 shadow-sm hover:border-violet-300 transition-colors">
+                <span className="font-bold text-stone-800">
+                  Tune my match
+                  <span className="ml-3 text-xs font-bold uppercase tracking-wider text-stone-400">optional</span>
+                </span>
+                <svg className="w-5 h-5 text-stone-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </summary>
+              <div className="mt-4">
+                <PreferencesPanel preferences={preferences} setPreferences={setPreferences} />
+              </div>
+            </details>
           </div>
         ) : (
           analysisResult && (
